@@ -156,13 +156,14 @@ export default function SettingsView() {
           </div>
           <div className="bg-surface-secondary rounded-xl border border-border overflow-hidden">
             {[
-              ['Cmd + 1', 'AI Chat'],
-              ['Cmd + 2', 'Notes'],
-              ['Cmd + 3', 'Tasks'],
-              ['Cmd + 4', 'Calendar'],
-              ['Cmd + 5', 'Files'],
-              ['Cmd + 6', 'Terminal'],
-              ['Cmd + 7', 'Bookmarks'],
+              ['Cmd + 1', 'Home'],
+              ['Cmd + 2', 'Chat'],
+              ['Cmd + 3', 'Notes'],
+              ['Cmd + 4', 'Tasks'],
+              ['Cmd + 5', 'Calendar'],
+              ['Cmd + 6', 'Files'],
+              ['Cmd + 7', 'Terminal'],
+              ['Cmd + 8', 'Bookmarks'],
               ['Cmd + ,', 'Settings'],
               ['Cmd + B', 'Toggle Sidebar']
             ].map(([shortcut, action], i) => (
