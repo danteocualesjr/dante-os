@@ -35,6 +35,13 @@ export default function AIChat() {
   const [model, setModel] = useState('gpt-4o')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const streamCleanupRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    return () => {
+      streamCleanupRef.current?.()
+    }
+  }, [])
 
   const loadConversations = useCallback(async () => {
     const convos = await window.api.conversations.list()
@@ -109,9 +116,14 @@ export default function AIChat() {
       setStreamText(fullResponse)
     })
 
-    const removeEnd = window.api.ai.onStreamEnd(async () => {
+    const cleanupListeners = () => {
       removeChunk()
       removeEnd()
+      streamCleanupRef.current = null
+    }
+
+    const removeEnd = window.api.ai.onStreamEnd(async () => {
+      cleanupListeners()
       setStreaming(false)
       setStreamText('')
 
@@ -131,11 +143,12 @@ export default function AIChat() {
       }
     })
 
+    streamCleanupRef.current = cleanupListeners
+
     try {
       await window.api.ai.chat({ model, messages: allMessages })
     } catch (err) {
-      removeChunk()
-      removeEnd()
+      cleanupListeners()
       setStreaming(false)
       setStreamText('')
       const errorMsg = (await window.api.messages.create({

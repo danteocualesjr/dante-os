@@ -289,7 +289,10 @@ export default function CalendarView() {
                       className={`w-7 h-7 rounded-full transition-all ${
                         newEvent.color === c ? 'ring-2 ring-offset-2 ring-offset-surface' : ''
                       }`}
-                      style={{ backgroundColor: c, ringColor: c }}
+                      style={{
+                        backgroundColor: c,
+                        ['--tw-ring-color' as string]: c
+                      }}
                     />
                   ))}
                 </div>

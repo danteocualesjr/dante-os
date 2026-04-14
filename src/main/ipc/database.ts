@@ -6,6 +6,27 @@ function generateId(): string {
   return crypto.randomUUID()
 }
 
+const ALLOWED_COLUMNS: Record<string, Set<string>> = {
+  conversations: new Set(['title', 'model']),
+  notes: new Set(['title', 'content', 'folder', 'tags']),
+  tasks: new Set(['title', 'description', 'status', 'priority', 'due_date', 'labels', 'sort_order']),
+  bookmarks: new Set(['url', 'title', 'description', 'folder', 'tags', 'favicon']),
+  calendar_events: new Set(['title', 'description', 'start_date', 'end_date', 'all_day', 'color', 'task_id'])
+}
+
+function sanitizeUpdateFields(
+  table: string,
+  data: Record<string, unknown>
+): { fields: string; values: unknown[] } {
+  const allowed = ALLOWED_COLUMNS[table]
+  if (!allowed) throw new Error(`Unknown table: ${table}`)
+  const keys = Object.keys(data).filter((k) => allowed.has(k))
+  if (keys.length === 0) throw new Error('No valid fields to update')
+  const fields = keys.map((k) => `${k} = ?`).join(', ')
+  const values = keys.map((k) => data[k])
+  return { fields, values }
+}
+
 export function registerDatabaseHandlers(): void {
   // --- Conversations ---
   ipcMain.handle('db:conversations:list', () => {
@@ -26,10 +47,7 @@ export function registerDatabaseHandlers(): void {
 
   ipcMain.handle('db:conversations:update', (_, id: string, data: Record<string, unknown>) => {
     const db = getDatabase()
-    const fields = Object.keys(data)
-      .map((k) => `${k} = ?`)
-      .join(', ')
-    const values = Object.values(data)
+    const { fields, values } = sanitizeUpdateFields('conversations', data)
     db.prepare(`UPDATE conversations SET ${fields}, updated_at = datetime('now') WHERE id = ?`).run(
       ...values,
       id
@@ -85,10 +103,7 @@ export function registerDatabaseHandlers(): void {
 
   ipcMain.handle('db:notes:update', (_, id: string, data: Record<string, unknown>) => {
     const db = getDatabase()
-    const fields = Object.keys(data)
-      .map((k) => `${k} = ?`)
-      .join(', ')
-    const values = Object.values(data)
+    const { fields, values } = sanitizeUpdateFields('notes', data)
     db.prepare(`UPDATE notes SET ${fields}, updated_at = datetime('now') WHERE id = ?`).run(
       ...values,
       id
@@ -143,10 +158,7 @@ export function registerDatabaseHandlers(): void {
 
   ipcMain.handle('db:tasks:update', (_, id: string, data: Record<string, unknown>) => {
     const db = getDatabase()
-    const fields = Object.keys(data)
-      .map((k) => `${k} = ?`)
-      .join(', ')
-    const values = Object.values(data)
+    const { fields, values } = sanitizeUpdateFields('tasks', data)
     db.prepare(`UPDATE tasks SET ${fields}, updated_at = datetime('now') WHERE id = ?`).run(
       ...values,
       id
@@ -197,10 +209,7 @@ export function registerDatabaseHandlers(): void {
 
   ipcMain.handle('db:bookmarks:update', (_, id: string, data: Record<string, unknown>) => {
     const db = getDatabase()
-    const fields = Object.keys(data)
-      .map((k) => `${k} = ?`)
-      .join(', ')
-    const values = Object.values(data)
+    const { fields, values } = sanitizeUpdateFields('bookmarks', data)
     db.prepare(`UPDATE bookmarks SET ${fields} WHERE id = ?`).run(...values, id)
     return db.prepare('SELECT * FROM bookmarks WHERE id = ?').get(id)
   })
@@ -257,10 +266,7 @@ export function registerDatabaseHandlers(): void {
 
   ipcMain.handle('db:events:update', (_, id: string, data: Record<string, unknown>) => {
     const db = getDatabase()
-    const fields = Object.keys(data)
-      .map((k) => `${k} = ?`)
-      .join(', ')
-    const values = Object.values(data)
+    const { fields, values } = sanitizeUpdateFields('calendar_events', data)
     db.prepare(`UPDATE calendar_events SET ${fields} WHERE id = ?`).run(...values, id)
     return db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(id)
   })

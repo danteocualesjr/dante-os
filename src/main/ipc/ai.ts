@@ -97,6 +97,21 @@ export function registerAIHandlers(): void {
       }
 
       if (isAnthropic) {
+        const systemMessages = data.messages.filter((m) => m.role === 'system')
+        const nonSystemMessages = data.messages
+          .filter((m) => m.role !== 'system')
+          .map((m) => ({ role: m.role, content: m.content }))
+
+        const body: Record<string, unknown> = {
+          model: data.model,
+          max_tokens: 4096,
+          messages: nonSystemMessages,
+          stream: true
+        }
+        if (systemMessages.length > 0) {
+          body.system = systemMessages.map((m) => m.content).join('\n\n')
+        }
+
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -104,12 +119,7 @@ export function registerAIHandlers(): void {
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01'
           },
-          body: JSON.stringify({
-            model: data.model,
-            max_tokens: 4096,
-            messages: data.messages.map((m) => ({ role: m.role, content: m.content })),
-            stream: true
-          })
+          body: JSON.stringify(body)
         })
 
         if (!response.ok) {
@@ -138,7 +148,9 @@ export function registerAIHandlers(): void {
               try {
                 const parsed = JSON.parse(jsonStr)
                 if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  event.sender.send('ai:stream-chunk', parsed.delta.text)
+                  if (!event.sender.isDestroyed()) {
+                    event.sender.send('ai:stream-chunk', parsed.delta.text)
+                  }
                 }
               } catch {
                 // skip malformed
@@ -146,7 +158,9 @@ export function registerAIHandlers(): void {
             }
           }
         }
-        event.sender.send('ai:stream-end')
+        if (!event.sender.isDestroyed()) {
+          event.sender.send('ai:stream-end')
+        }
       } else {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -188,7 +202,9 @@ export function registerAIHandlers(): void {
                 const parsed = JSON.parse(jsonStr)
                 const content = parsed.choices?.[0]?.delta?.content
                 if (content) {
-                  event.sender.send('ai:stream-chunk', content)
+                  if (!event.sender.isDestroyed()) {
+                    event.sender.send('ai:stream-chunk', content)
+                  }
                 }
               } catch {
                 // skip malformed
@@ -196,7 +212,9 @@ export function registerAIHandlers(): void {
             }
           }
         }
-        event.sender.send('ai:stream-end')
+        if (!event.sender.isDestroyed()) {
+          event.sender.send('ai:stream-end')
+        }
       }
     }
   )

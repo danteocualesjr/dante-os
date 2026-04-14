@@ -170,12 +170,19 @@ export default function Notes() {
                   <FolderOpen size={10} />
                   {note.folder}
                 </span>
-                {JSON.parse(note.tags).length > 0 && (
-                  <span className="text-[11px] text-text-tertiary flex items-center gap-1">
-                    <Tag size={10} />
-                    {JSON.parse(note.tags).length}
-                  </span>
-                )}
+                {(() => {
+                  try {
+                    const parsed = JSON.parse(note.tags)
+                    return parsed.length > 0 ? (
+                      <span className="text-[11px] text-text-tertiary flex items-center gap-1">
+                        <Tag size={10} />
+                        {parsed.length}
+                      </span>
+                    ) : null
+                  } catch {
+                    return null
+                  }
+                })()}
               </div>
             </div>
           ))}

@@ -11,8 +11,18 @@ export default function Terminal() {
   const [tabs, setTabs] = useState<TerminalTab[]>([])
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
-  const xtermRef = useRef<{ terminal: unknown; fitAddon: unknown } | null>(null)
-  const cleanupRef = useRef<(() => void) | null>(null)
+  const terminalsRef = useRef<
+    Map<
+      string,
+      {
+        element: HTMLDivElement
+        terminal: unknown
+        fitAddon: unknown
+        cleanup: () => void
+        initialized: boolean
+      }
+    >
+  >(new Map())
 
   const createTab = useCallback(async () => {
     const id = `term-${Date.now()}`
@@ -31,23 +41,37 @@ export default function Terminal() {
   useEffect(() => {
     if (!activeTab || !terminalRef.current) return
 
+    const container = terminalRef.current
+
+    for (const [, entry] of terminalsRef.current) {
+      entry.element.style.display = 'none'
+    }
+
+    const existing = terminalsRef.current.get(activeTab)
+    if (existing) {
+      existing.element.style.display = ''
+      container.appendChild(existing.element)
+      const fitAddon = existing.fitAddon as { fit: () => void }
+      try { fitAddon.fit() } catch { /* noop */ }
+      return
+    }
+
     let cancelled = false
 
     const init = async () => {
-      if (cleanupRef.current) {
-        cleanupRef.current()
-        cleanupRef.current = null
-      }
-
-      if (terminalRef.current) {
-        terminalRef.current.innerHTML = ''
-      }
+      const wrapper = document.createElement('div')
+      wrapper.style.width = '100%'
+      wrapper.style.height = '100%'
+      container.appendChild(wrapper)
 
       try {
         const { Terminal: XTerm } = await import('@xterm/xterm')
         const { FitAddon } = await import('@xterm/addon-fit')
 
-        if (cancelled) return
+        if (cancelled) {
+          wrapper.remove()
+          return
+        }
 
         const terminal = new XTerm({
           theme: {
@@ -83,46 +107,53 @@ export default function Terminal() {
         const fitAddon = new FitAddon()
         terminal.loadAddon(fitAddon)
 
-        if (terminalRef.current && !cancelled) {
-          terminal.open(terminalRef.current)
-          fitAddon.fit()
+        terminal.open(wrapper)
+        fitAddon.fit()
 
-          xtermRef.current = { terminal, fitAddon }
-
-          const result = await window.api.terminal.create(activeTab)
-          if (!result.success) {
-            terminal.writeln(`\r\nFailed to create terminal: ${result.error || 'Unknown error'}`)
-            terminal.writeln('node-pty may not be installed. Run: npm rebuild node-pty')
-            return
-          }
-
-          terminal.onData((data: string) => {
-            window.api.terminal.write(activeTab, data)
-          })
-
-          const removeData = window.api.terminal.onData(activeTab, (data: string) => {
-            terminal.write(data)
-          })
-
-          const removeExit = window.api.terminal.onExit(activeTab, () => {
-            terminal.writeln('\r\n[Process exited]')
-          })
-
-          const observer = new ResizeObserver(() => {
-            fitAddon.fit()
-            window.api.terminal.resize(activeTab, terminal.cols, terminal.rows)
-          })
-          observer.observe(terminalRef.current)
-
-          cleanupRef.current = () => {
-            removeData()
-            removeExit()
-            observer.disconnect()
-            terminal.dispose()
-          }
+        const tabId = activeTab
+        const result = await window.api.terminal.create(tabId)
+        if (!result.success) {
+          terminal.writeln(`\r\nFailed to create terminal: ${result.error || 'Unknown error'}`)
+          terminal.writeln('node-pty may not be installed. Run: npm rebuild node-pty')
+          return
         }
+
+        terminal.onData((data: string) => {
+          window.api.terminal.write(tabId, data)
+        })
+
+        const removeData = window.api.terminal.onData(tabId, (data: string) => {
+          terminal.write(data)
+        })
+
+        const removeExit = window.api.terminal.onExit(tabId, () => {
+          terminal.writeln('\r\n[Process exited]')
+        })
+
+        const observer = new ResizeObserver(() => {
+          fitAddon.fit()
+          window.api.terminal.resize(tabId, terminal.cols, terminal.rows)
+        })
+        observer.observe(wrapper)
+
+        const cleanup = () => {
+          removeData()
+          removeExit()
+          observer.disconnect()
+          terminal.dispose()
+          wrapper.remove()
+        }
+
+        terminalsRef.current.set(tabId, {
+          element: wrapper,
+          terminal,
+          fitAddon,
+          cleanup,
+          initialized: true
+        })
       } catch (err) {
         console.error('Failed to initialize terminal:', err)
+        wrapper.remove()
       }
     }
 
@@ -130,14 +161,15 @@ export default function Terminal() {
 
     return () => {
       cancelled = true
-      if (cleanupRef.current) {
-        cleanupRef.current()
-        cleanupRef.current = null
-      }
     }
   }, [activeTab])
 
   const closeTab = async (id: string) => {
+    const entry = terminalsRef.current.get(id)
+    if (entry) {
+      entry.cleanup()
+      terminalsRef.current.delete(id)
+    }
     await window.api.terminal.kill(id)
     setTabs((prev) => prev.filter((t) => t.id !== id))
     if (activeTab === id) {

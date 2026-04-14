@@ -174,7 +174,6 @@ export default function FileManager() {
               return (
                 <div
                   key={file.path}
-                  onDoubleClick={() => handleClick(file)}
                   onClick={() => handleClick(file)}
                   className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-surface-secondary cursor-pointer transition-colors group"
                 >
