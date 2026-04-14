@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export type ModuleId =
+  | 'home'
   | 'ai-chat'
   | 'notes'
   | 'tasks'
@@ -18,7 +19,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activeModule: 'ai-chat',
+  activeModule: 'home',
   setActiveModule: (module) => set({ activeModule: module }),
   sidebarCollapsed: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed }))

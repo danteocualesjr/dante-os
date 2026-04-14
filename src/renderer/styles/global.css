@@ -1,20 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface: #ffffff;
-  --color-surface-secondary: #f5f5f7;
-  --color-surface-tertiary: #ebebed;
-  --color-sidebar: rgba(246, 246, 248, 0.85);
-  --color-border: #e5e5e7;
-  --color-border-light: #f0f0f2;
-  --color-text-primary: #1d1d1f;
-  --color-text-secondary: #6e6e73;
-  --color-text-tertiary: #aeaeb2;
-  --color-accent: #007aff;
-  --color-accent-hover: #0066d6;
-  --color-danger: #ff3b30;
-  --color-warning: #ff9500;
-  --color-success: #34c759;
+  --color-surface: #FAF8F5;
+  --color-surface-secondary: #F3F0EB;
+  --color-surface-tertiary: #EBE7E0;
+  --color-sidebar: rgba(244, 241, 236, 0.92);
+  --color-border: #E8E4DD;
+  --color-border-light: #F0ECE6;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B6560;
+  --color-text-tertiary: #A8A29E;
+  --color-accent: #1A1A1A;
+  --color-accent-hover: #333333;
+  --color-accent-green: #2D7A4F;
+  --color-accent-green-hover: #236840;
+  --color-danger: #D94F4F;
+  --color-warning: #D4910A;
+  --color-success: #2D7A4F;
+  --color-event-blue: #4A7FBF;
+  --color-event-green: #4A9F6E;
+  --color-event-purple: #7B5EA7;
+  --color-event-orange: #C47A2A;
+  --color-event-red: #BF4A4A;
+
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
 }
 
 * {
@@ -53,19 +62,23 @@ html, body, #root {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  background: color-mix(in srgb, var(--color-event-blue) 25%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-surface: #1c1c1e;
-    --color-surface-secondary: #2c2c2e;
-    --color-surface-tertiary: #3a3a3c;
-    --color-sidebar: rgba(28, 28, 30, 0.85);
-    --color-border: #38383a;
-    --color-border-light: #2c2c2e;
-    --color-text-primary: #f5f5f7;
-    --color-text-secondary: #a1a1a6;
-    --color-text-tertiary: #636366;
+    --color-surface: #1C1B19;
+    --color-surface-secondary: #252420;
+    --color-surface-tertiary: #302F2A;
+    --color-sidebar: rgba(28, 27, 25, 0.92);
+    --color-border: #3A3835;
+    --color-border-light: #2C2B27;
+    --color-text-primary: #F5F2ED;
+    --color-text-secondary: #A8A29E;
+    --color-text-tertiary: #6B6560;
+    --color-accent: #F5F2ED;
+    --color-accent-hover: #E0DDD8;
+    --color-accent-green: #4CAF78;
+    --color-accent-green-hover: #5DBF87;
   }
 }

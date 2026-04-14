@@ -2,13 +2,14 @@ import { useEffect } from 'react'
 import { useAppStore, type ModuleId } from '../stores/appStore'
 
 const MODULE_SHORTCUTS: Record<string, ModuleId> = {
-  '1': 'ai-chat',
-  '2': 'notes',
-  '3': 'tasks',
-  '4': 'calendar',
-  '5': 'file-manager',
-  '6': 'terminal',
-  '7': 'bookmarks',
+  '1': 'home',
+  '2': 'ai-chat',
+  '3': 'notes',
+  '4': 'tasks',
+  '5': 'calendar',
+  '6': 'file-manager',
+  '7': 'terminal',
+  '8': 'bookmarks',
   ',': 'settings'
 }
 
