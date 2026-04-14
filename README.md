@@ -50,3 +50,4 @@ npm run build
 - Tiptap (rich text editor)
 - xterm.js + node-pty (terminal)
 - OpenAI + Anthropic APIs (AI chat)
+# dante-os
