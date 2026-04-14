@@ -1,27 +1,63 @@
-import { ipcMain, safeStorage, app } from 'electron'
+import { ipcMain, safeStorage, app, BrowserWindow } from 'electron'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 function getKeysPath(): string {
+  return join(app.getPath('userData'), 'api-keys.json')
+}
+
+function getEncKeysPath(): string {
   return join(app.getPath('userData'), 'api-keys.enc')
 }
 
-function loadKeys(): Record<string, string> {
-  const keysPath = getKeysPath()
-  if (!existsSync(keysPath)) return {}
+function canEncrypt(): boolean {
   try {
-    const encrypted = readFileSync(keysPath)
-    const decrypted = safeStorage.decryptString(encrypted)
-    return JSON.parse(decrypted)
+    return safeStorage.isEncryptionAvailable()
   } catch {
-    return {}
+    return false
   }
 }
 
+function loadKeys(): Record<string, string> {
+  if (canEncrypt()) {
+    const encPath = getEncKeysPath()
+    if (existsSync(encPath)) {
+      try {
+        const encrypted = readFileSync(encPath)
+        const decrypted = safeStorage.decryptString(encrypted)
+        return JSON.parse(decrypted)
+      } catch {
+        // fall through to plaintext
+      }
+    }
+  }
+
+  const plainPath = getKeysPath()
+  if (existsSync(plainPath)) {
+    try {
+      const data = readFileSync(plainPath, 'utf-8')
+      return JSON.parse(data)
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
 function saveKeys(keys: Record<string, string>): void {
-  const keysPath = getKeysPath()
-  const encrypted = safeStorage.encryptString(JSON.stringify(keys))
-  writeFileSync(keysPath, encrypted)
+  if (canEncrypt()) {
+    try {
+      const encPath = getEncKeysPath()
+      const encrypted = safeStorage.encryptString(JSON.stringify(keys))
+      writeFileSync(encPath, encrypted)
+      return
+    } catch {
+      // fall through to plaintext
+    }
+  }
+
+  const plainPath = getKeysPath()
+  writeFileSync(plainPath, JSON.stringify(keys, null, 2), 'utf-8')
 }
 
 export function registerAIHandlers(): void {
@@ -37,12 +73,14 @@ export function registerAIHandlers(): void {
     const keys = loadKeys()
     keys[provider] = key
     saveKeys(keys)
+    return { success: true }
   })
 
   ipcMain.handle('ai:removeKey', (_, provider: string) => {
     const keys = loadKeys()
     delete keys[provider]
     saveKeys(keys)
+    return { success: true }
   })
 
   ipcMain.handle(
