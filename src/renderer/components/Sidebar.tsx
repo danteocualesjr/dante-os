@@ -33,6 +33,60 @@ const utilityNav: { id: ModuleId; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: TerminalSquare }
 ]
 
+function NavButton({
+  id,
+  label,
+  icon: Icon,
+  isActive,
+  onClick,
+  collapsed = false
+}: {
+  id: string
+  label: string
+  icon: React.ElementType
+  isActive: boolean
+  onClick: () => void
+  collapsed?: boolean
+}) {
+  if (collapsed) {
+    return (
+      <button
+        key={id}
+        onClick={onClick}
+        title={label}
+        className={`relative w-full flex items-center justify-center p-2 rounded-lg transition-all duration-150 ${
+          isActive
+            ? 'bg-surface-tertiary text-text-primary'
+            : 'text-text-secondary hover:bg-surface-tertiary/60 hover:text-text-primary'
+        }`}
+      >
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-accent-green" />
+        )}
+        <Icon size={18} strokeWidth={1.8} />
+      </button>
+    )
+  }
+
+  return (
+    <button
+      key={id}
+      onClick={onClick}
+      className={`relative w-full flex items-center gap-2.5 px-3 py-[6px] rounded-lg text-[13px] font-medium transition-all duration-150 ${
+        isActive
+          ? 'bg-surface-tertiary/80 text-text-primary'
+          : 'text-text-secondary hover:bg-surface-tertiary/40 hover:text-text-primary'
+      }`}
+    >
+      {isActive && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-accent-green" />
+      )}
+      <Icon size={16} strokeWidth={1.8} />
+      <span>{label}</span>
+    </button>
+  )
+}
+
 export default function Sidebar() {
   const { activeModule, setActiveModule, sidebarCollapsed } = useAppStore()
 
@@ -41,30 +95,27 @@ export default function Sidebar() {
       <aside className="shrink-0 w-[56px] bg-sidebar backdrop-blur-xl border-r border-border flex flex-col transition-all duration-200">
         <div className="h-[52px] shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
         <nav className="flex-1 px-2 py-1 space-y-1 overflow-y-auto">
-          {[...primaryNav, ...spacesNav, ...utilityNav].map(({ id, icon: Icon }) => {
-            const isActive = activeModule === id
-            return (
-              <button
-                key={id}
-                onClick={() => setActiveModule(id)}
-                className={`w-full flex items-center justify-center p-2 rounded-lg transition-all duration-150 ${
-                  isActive
-                    ? 'bg-surface-tertiary text-text-primary'
-                    : 'text-text-secondary hover:bg-surface-tertiary/60 hover:text-text-primary'
-                }`}
-              >
-                <Icon size={18} strokeWidth={1.8} />
-              </button>
-            )
-          })}
+          {[...primaryNav, ...spacesNav, ...utilityNav].map(({ id, label, icon }) => (
+            <NavButton
+              key={id}
+              id={id}
+              label={label}
+              icon={icon}
+              isActive={activeModule === id}
+              onClick={() => setActiveModule(id)}
+              collapsed
+            />
+          ))}
         </nav>
         <div className="p-2 border-t border-border">
-          <button
+          <NavButton
+            id="settings"
+            label="Settings"
+            icon={Settings}
+            isActive={activeModule === 'settings'}
             onClick={() => setActiveModule('settings')}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-text-secondary hover:bg-surface-tertiary/60 hover:text-text-primary transition-all duration-150"
-          >
-            <Settings size={18} strokeWidth={1.8} />
-          </button>
+            collapsed
+          />
         </div>
       </aside>
     )
@@ -88,23 +139,16 @@ export default function Sidebar() {
 
       {/* Primary navigation */}
       <nav className="px-2 py-2 space-y-0.5">
-        {primaryNav.map(({ id, label, icon: Icon }) => {
-          const isActive = activeModule === id
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveModule(id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-[6px] rounded-lg text-[13px] font-medium transition-all duration-150 ${
-                isActive
-                  ? 'bg-surface-tertiary/80 text-text-primary'
-                  : 'text-text-secondary hover:bg-surface-tertiary/40 hover:text-text-primary'
-              }`}
-            >
-              <Icon size={16} strokeWidth={1.8} />
-              <span>{label}</span>
-            </button>
-          )
-        })}
+        {primaryNav.map(({ id, label, icon }) => (
+          <NavButton
+            key={id}
+            id={id}
+            label={label}
+            icon={icon}
+            isActive={activeModule === id}
+            onClick={() => setActiveModule(id)}
+          />
+        ))}
       </nav>
 
       {/* Spaces section */}
@@ -114,23 +158,16 @@ export default function Sidebar() {
         </span>
       </div>
       <nav className="px-2 py-1 space-y-0.5">
-        {spacesNav.map(({ id, label, icon: Icon }) => {
-          const isActive = activeModule === id
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveModule(id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-[6px] rounded-lg text-[13px] font-medium transition-all duration-150 ${
-                isActive
-                  ? 'bg-surface-tertiary/80 text-text-primary'
-                  : 'text-text-secondary hover:bg-surface-tertiary/40 hover:text-text-primary'
-              }`}
-            >
-              <Icon size={16} strokeWidth={1.8} />
-              <span>{label}</span>
-            </button>
-          )
-        })}
+        {spacesNav.map(({ id, label, icon }) => (
+          <NavButton
+            key={id}
+            id={id}
+            label={label}
+            icon={icon}
+            isActive={activeModule === id}
+            onClick={() => setActiveModule(id)}
+          />
+        ))}
       </nav>
 
       {/* Tools section */}
@@ -140,23 +177,16 @@ export default function Sidebar() {
         </span>
       </div>
       <nav className="px-2 py-1 space-y-0.5 flex-1">
-        {utilityNav.map(({ id, label, icon: Icon }) => {
-          const isActive = activeModule === id
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveModule(id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-[6px] rounded-lg text-[13px] font-medium transition-all duration-150 ${
-                isActive
-                  ? 'bg-surface-tertiary/80 text-text-primary'
-                  : 'text-text-secondary hover:bg-surface-tertiary/40 hover:text-text-primary'
-              }`}
-            >
-              <Icon size={16} strokeWidth={1.8} />
-              <span>{label}</span>
-            </button>
-          )
-        })}
+        {utilityNav.map(({ id, label, icon }) => (
+          <NavButton
+            key={id}
+            id={id}
+            label={label}
+            icon={icon}
+            isActive={activeModule === id}
+            onClick={() => setActiveModule(id)}
+          />
+        ))}
       </nav>
 
       {/* Bottom section */}
@@ -191,24 +221,23 @@ export default function Sidebar() {
         </div>
 
         {/* Settings row */}
-        <button
+        <NavButton
+          id="settings"
+          label="Settings"
+          icon={Settings}
+          isActive={activeModule === 'settings'}
           onClick={() => setActiveModule('settings')}
-          className={`w-full flex items-center gap-2.5 px-3 py-[6px] rounded-lg text-[13px] font-medium transition-all duration-150 ${
-            activeModule === 'settings'
-              ? 'bg-surface-tertiary/80 text-text-primary'
-              : 'text-text-secondary hover:bg-surface-tertiary/40 hover:text-text-primary'
-          }`}
-        >
-          <Settings size={16} strokeWidth={1.8} />
-          <span>Settings</span>
-        </button>
+        />
 
         {/* App branding */}
-        <div className="flex items-center gap-2 px-2 pt-1 pb-1">
-          <div className="w-5 h-5 rounded bg-text-primary flex items-center justify-center">
+        <div className="flex items-center gap-2.5 px-2 pt-2 pb-1">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-text-primary to-text-secondary flex items-center justify-center shadow-sm">
             <span className="text-[11px] font-bold text-surface">D</span>
           </div>
-          <span className="text-[12px] font-medium text-text-secondary">Dante OS</span>
+          <div className="min-w-0">
+            <span className="text-[12px] font-semibold text-text-primary block leading-tight">Dante OS</span>
+            <span className="text-[10px] text-text-tertiary">Personal workspace</span>
+          </div>
         </div>
       </div>
     </aside>
