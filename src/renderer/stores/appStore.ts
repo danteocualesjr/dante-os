@@ -16,11 +16,15 @@ interface AppState {
   setActiveModule: (module: ModuleId) => void
   sidebarCollapsed: boolean
   toggleSidebar: () => void
+  pendingChatPrompt: string | null
+  setPendingChatPrompt: (prompt: string | null) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
   activeModule: 'home',
   setActiveModule: (module) => set({ activeModule: module }),
   sidebarCollapsed: false,
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed }))
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  pendingChatPrompt: null,
+  setPendingChatPrompt: (prompt) => set({ pendingChatPrompt: prompt })
 }))

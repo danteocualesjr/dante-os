@@ -18,6 +18,7 @@ import {
   isSameDay,
   isToday
 } from 'date-fns'
+import { parseLocalDate } from '../../lib/utils'
 
 interface CalendarEvent {
   id: string
@@ -74,7 +75,7 @@ export default function CalendarView() {
 
   const getEventsForDay = (date: Date) =>
     events.filter((e) => {
-      const eventDate = new Date(e.start_date)
+      const eventDate = parseLocalDate(e.start_date)
       return isSameDay(eventDate, date)
     })
 

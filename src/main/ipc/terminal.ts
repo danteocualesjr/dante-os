@@ -1,7 +1,12 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import { homedir } from 'os'
 
-const terminals: Map<string, unknown> = new Map()
+interface TerminalHandle {
+  id: string
+  pty: { write: (data: string) => void; resize: (cols: number, rows: number) => void; kill: () => void }
+}
+
+const terminals: Map<string, TerminalHandle> = new Map()
 let ptyModule: typeof import('node-pty') | null = null
 
 function getPty(): typeof import('node-pty') {
@@ -11,7 +16,21 @@ function getPty(): typeof import('node-pty') {
   return ptyModule!
 }
 
+function killAllTerminals(): void {
+  for (const [, handle] of terminals) {
+    try {
+      handle.pty.kill()
+    } catch {
+      // ignore
+    }
+  }
+  terminals.clear()
+}
+
 export function registerTerminalHandlers(): void {
+  app.on('before-quit', killAllTerminals)
+  app.on('window-all-closed', killAllTerminals)
+
   ipcMain.handle('terminal:create', (event, id: string) => {
     try {
       const pty = getPty()
@@ -24,16 +43,38 @@ export function registerTerminalHandlers(): void {
         env: process.env as Record<string, string>
       })
 
-      terminals.set(id, term)
+      const handle: TerminalHandle = { id, pty: term }
+      terminals.set(id, handle)
+
+      const sender = event.sender
 
       term.onData((data: string) => {
-        event.sender.send(`terminal:data:${id}`, data)
+        if (!sender.isDestroyed()) {
+          sender.send(`terminal:data:${id}`, data)
+        }
       })
 
       term.onExit(() => {
         terminals.delete(id)
-        event.sender.send(`terminal:exit:${id}`)
+        if (!sender.isDestroyed()) {
+          sender.send(`terminal:exit:${id}`)
+        }
       })
+
+      // If the renderer goes away (window closed, reload), make sure the PTY
+      // is torn down so we don't leave zombie shells running in the background.
+      const onSenderDestroyed = (): void => {
+        const existing = terminals.get(id)
+        if (existing) {
+          try {
+            existing.pty.kill()
+          } catch {
+            // ignore
+          }
+          terminals.delete(id)
+        }
+      }
+      sender.once('destroyed', onSenderDestroyed)
 
       return { success: true }
     } catch (err) {
@@ -42,23 +83,35 @@ export function registerTerminalHandlers(): void {
   })
 
   ipcMain.handle('terminal:write', (_, id: string, data: string) => {
-    const term = terminals.get(id) as { write: (data: string) => void } | undefined
-    if (term) {
-      term.write(data)
+    const handle = terminals.get(id)
+    if (handle) {
+      try {
+        handle.pty.write(data)
+      } catch {
+        // ignore write errors on dead ptys
+      }
     }
   })
 
   ipcMain.handle('terminal:resize', (_, id: string, cols: number, rows: number) => {
-    const term = terminals.get(id) as { resize: (cols: number, rows: number) => void } | undefined
-    if (term) {
-      term.resize(cols, rows)
+    const handle = terminals.get(id)
+    if (handle && Number.isFinite(cols) && Number.isFinite(rows) && cols > 0 && rows > 0) {
+      try {
+        handle.pty.resize(cols, rows)
+      } catch {
+        // ignore resize errors on dead ptys
+      }
     }
   })
 
   ipcMain.handle('terminal:kill', (_, id: string) => {
-    const term = terminals.get(id) as { kill: () => void } | undefined
-    if (term) {
-      term.kill()
+    const handle = terminals.get(id)
+    if (handle) {
+      try {
+        handle.pty.kill()
+      } catch {
+        // ignore
+      }
       terminals.delete(id)
     }
   })

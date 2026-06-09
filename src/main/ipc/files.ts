@@ -3,6 +3,11 @@ import { readdir, stat, readFile } from 'fs/promises'
 import { join, extname, basename } from 'path'
 import { homedir } from 'os'
 
+// Cap previews at 10 MB so opening a very large text or image file in the
+// File Manager can't blow up the renderer by loading hundreds of MB into
+// memory or, for images, blocking on a massive base64 encode.
+const MAX_PREVIEW_BYTES = 10 * 1024 * 1024
+
 export interface FileEntry {
   name: string
   path: string
@@ -53,16 +58,44 @@ export function registerFileHandlers(): void {
     ]
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico']
 
-    if (textExtensions.includes(ext)) {
+    const isText = textExtensions.includes(ext)
+    const isImage = imageExtensions.includes(ext)
+
+    if (!isText && !isImage) {
+      return { type: 'unknown' as const, content: null, name: basename(filePath) }
+    }
+
+    try {
+      const stats = await stat(filePath)
+      if (stats.size > MAX_PREVIEW_BYTES) {
+        return {
+          type: 'text' as const,
+          content: `File too large to preview (${(stats.size / (1024 * 1024)).toFixed(1)} MB).`,
+          name: basename(filePath)
+        }
+      }
+    } catch {
+      return { type: 'unknown' as const, content: null, name: basename(filePath) }
+    }
+
+    if (isText) {
       const content = await readFile(filePath, 'utf-8')
       return { type: 'text' as const, content, name: basename(filePath) }
-    } else if (imageExtensions.includes(ext)) {
-      const buffer = await readFile(filePath)
-      const base64 = buffer.toString('base64')
-      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`
-      return { type: 'image' as const, content: `data:${mime};base64,${base64}`, name: basename(filePath) }
     }
-    return { type: 'unknown' as const, content: null, name: basename(filePath) }
+
+    const buffer = await readFile(filePath)
+    const base64 = buffer.toString('base64')
+    const mime =
+      ext === 'svg'
+        ? 'image/svg+xml'
+        : ext === 'ico'
+        ? 'image/x-icon'
+        : `image/${ext === 'jpg' ? 'jpeg' : ext}`
+    return {
+      type: 'image' as const,
+      content: `data:${mime};base64,${base64}`,
+      name: basename(filePath)
+    }
   })
 
   ipcMain.handle('files:open', async (_, filePath: string) => {

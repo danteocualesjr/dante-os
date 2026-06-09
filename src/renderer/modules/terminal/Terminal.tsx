@@ -171,11 +171,14 @@ export default function Terminal() {
       terminalsRef.current.delete(id)
     }
     await window.api.terminal.kill(id)
-    setTabs((prev) => prev.filter((t) => t.id !== id))
-    if (activeTab === id) {
-      const remaining = tabs.filter((t) => t.id !== id)
-      setActiveTab(remaining.length > 0 ? remaining[remaining.length - 1].id : null)
-    }
+    setTabs((prev) => {
+      const remaining = prev.filter((t) => t.id !== id)
+      setActiveTab((current) => {
+        if (current !== id) return current
+        return remaining.length > 0 ? remaining[remaining.length - 1].id : null
+      })
+      return remaining
+    })
   }
 
   return (

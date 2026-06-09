@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, isToday, isSameDay, startOfDay, parseISO } from 'date-fns'
+import { parseLocalDate } from '../../lib/utils'
 
 interface CalendarEvent {
   id: string
@@ -45,6 +46,13 @@ interface DayGroup {
   events: CalendarEvent[]
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function Home() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
 
@@ -64,10 +72,12 @@ export default function Home() {
       const today = startOfDay(now)
       const filtered = Array.from(uniqueMap.values())
         .filter((e) => {
-          const eventDate = startOfDay(parseISO(e.start_date))
+          const eventDate = startOfDay(parseLocalDate(e.start_date))
           return eventDate >= today
         })
-        .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+        .sort(
+          (a, b) => parseLocalDate(a.start_date).getTime() - parseLocalDate(b.start_date).getTime()
+        )
       setEvents(filtered)
     } catch {
       setEvents([])
@@ -82,37 +92,49 @@ export default function Home() {
   const daysToShow = 7
   for (let i = 0; i < daysToShow; i++) {
     const date = addDays(new Date(), i)
-    const dayEvents = events.filter((e) => isSameDay(parseISO(e.start_date), date))
+    const dayEvents = events.filter((e) => isSameDay(parseLocalDate(e.start_date), date))
     dayGroups.push({ date, events: dayEvents })
   }
 
-  const todayEvents = events.filter((e) => isToday(parseISO(e.start_date)))
+  const todayEvents = events.filter((e) => isToday(parseLocalDate(e.start_date)))
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-[720px] mx-auto px-8 py-8">
+      <div className="max-w-[720px] mx-auto px-8 py-8 animate-fade-in-up">
+        <p className="text-[13px] font-medium text-text-tertiary uppercase tracking-wider mb-2">
+          {getGreeting()}
+        </p>
         <h1
-          className="text-[36px] font-normal tracking-[-0.01em] mb-8"
+          className="text-[36px] font-normal tracking-[-0.01em] mb-2"
           style={{ fontFamily: "var(--font-serif)" }}
         >
           Coming up
         </h1>
+        <p className="text-[14px] text-text-secondary mb-8">
+          {events.length === 0
+            ? 'Your schedule is clear for the next week'
+            : `${events.length} event${events.length === 1 ? '' : 's'} in the next 7 days`}
+        </p>
 
-        <div className="border border-border rounded-xl overflow-hidden bg-surface">
+        <div className="border border-border rounded-xl overflow-hidden bg-surface card-elevated">
           {dayGroups.map((group, groupIdx) => {
             const dayIsToday = isToday(group.date)
             return (
               <div
                 key={groupIdx}
-                className={`flex gap-6 px-6 py-5 ${
+                className={`flex gap-6 px-6 py-5 transition-colors ${
                   groupIdx > 0 ? 'border-t border-border' : ''
-                }`}
+                } ${dayIsToday ? 'bg-surface-secondary/60' : ''}`}
               >
                 <div className="w-[70px] shrink-0 flex flex-col items-start">
-                  <span className="text-[32px] font-light leading-none text-text-primary relative">
+                  <span
+                    className={`text-[32px] font-light leading-none relative ${
+                      dayIsToday ? 'text-accent-green font-normal' : 'text-text-primary'
+                    }`}
+                  >
                     {format(group.date, 'd')}
                     {dayIsToday && (
-                      <span className="absolute -top-0.5 -right-2 w-2 h-2 rounded-full bg-danger" />
+                      <span className="absolute -top-0.5 -right-2 w-2 h-2 rounded-full bg-accent-green" />
                     )}
                   </span>
                   <span className="text-[13px] text-text-secondary mt-1">

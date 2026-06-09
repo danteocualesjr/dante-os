@@ -6,7 +6,6 @@ import {
   ExternalLink,
   FolderOpen,
   Globe,
-  X,
   Tag
 } from 'lucide-react'
 

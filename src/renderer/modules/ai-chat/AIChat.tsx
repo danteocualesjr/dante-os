@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, Send, Trash2, Bot, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { useAppStore } from '../../stores/appStore'
 
 interface Conversation {
   id: string
@@ -36,6 +37,9 @@ export default function AIChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const streamCleanupRef = useRef<(() => void) | null>(null)
+  const sendMessageRef = useRef<() => void>(() => {})
+  const pendingChatPrompt = useAppStore((s) => s.pendingChatPrompt)
+  const setPendingChatPrompt = useAppStore((s) => s.setPendingChatPrompt)
 
   useEffect(() => {
     return () => {
@@ -55,9 +59,14 @@ export default function AIChat() {
   useEffect(() => {
     if (activeConvo) {
       window.api.messages.list(activeConvo).then((msgs) => setMessages(msgs as Message[]))
+      const convo = conversations.find((c) => c.id === activeConvo)
+      if (convo && convo.model && convo.model !== model) {
+        setModel(convo.model)
+      }
     } else {
       setMessages([])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConvo])
 
   useEffect(() => {
@@ -111,18 +120,23 @@ export default function AIChat() {
     }))
 
     let fullResponse = ''
-    const removeChunk = window.api.ai.onStreamChunk((chunk: string) => {
+    let removeChunk: (() => void) | null = null
+    let removeEnd: (() => void) | null = null
+
+    const cleanupListeners = (): void => {
+      removeChunk?.()
+      removeEnd?.()
+      removeChunk = null
+      removeEnd = null
+      streamCleanupRef.current = null
+    }
+
+    removeChunk = window.api.ai.onStreamChunk((chunk: string) => {
       fullResponse += chunk
       setStreamText(fullResponse)
     })
 
-    const cleanupListeners = () => {
-      removeChunk()
-      removeEnd()
-      streamCleanupRef.current = null
-    }
-
-    const removeEnd = window.api.ai.onStreamEnd(async () => {
+    removeEnd = window.api.ai.onStreamEnd(async () => {
       cleanupListeners()
       setStreaming(false)
       setStreamText('')
@@ -166,6 +180,18 @@ export default function AIChat() {
       sendMessage()
     }
   }
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage
+  })
+
+  useEffect(() => {
+    if (!pendingChatPrompt) return
+    setInput(pendingChatPrompt)
+    setPendingChatPrompt(null)
+    const id = window.setTimeout(() => sendMessageRef.current(), 0)
+    return () => window.clearTimeout(id)
+  }, [pendingChatPrompt, setPendingChatPrompt])
 
   const autoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const el = e.target
@@ -225,7 +251,16 @@ export default function AIChat() {
         <div className="px-4 py-2 border-b border-border flex items-center gap-3">
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value
+              setModel(next)
+              if (activeConvo) {
+                window.api.conversations.update(activeConvo, { model: next })
+                setConversations((prev) =>
+                  prev.map((c) => (c.id === activeConvo ? { ...c, model: next } : c))
+                )
+              }
+            }}
             className="bg-surface-secondary border border-border rounded-lg px-3 py-1.5 text-[13px] text-text-primary outline-none focus:border-accent transition-colors"
           >
             {MODELS.map((m) => (

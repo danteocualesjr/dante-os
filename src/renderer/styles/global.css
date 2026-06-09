@@ -65,6 +65,32 @@ html, body, #root {
   background: color-mix(in srgb, var(--color-event-blue) 25%, transparent);
 }
 
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-event-blue) 50%, transparent);
+  outline-offset: 2px;
+}
+
+.card-elevated {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--color-text-primary) 4%, transparent),
+    0 4px 16px color-mix(in srgb, var(--color-text-primary) 3%, transparent);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease-out both;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --color-surface: #1C1B19;
