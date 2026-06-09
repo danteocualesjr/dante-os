@@ -26,6 +26,12 @@ const MODELS = [
   { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', provider: 'anthropic' }
 ]
 
+const PROMPT_SUGGESTIONS = [
+  'Summarize my week ahead',
+  'Draft a quick meeting agenda',
+  'Help me prioritize my tasks'
+]
+
 export default function AIChat() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConvo, setActiveConvo] = useState<string | null>(null)
@@ -207,7 +213,7 @@ export default function AIChat() {
         <div className="p-3 border-b border-border">
           <button
             onClick={createConversation}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-accent text-white rounded-lg text-[13px] font-medium hover:bg-accent-hover transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-accent text-surface rounded-xl text-[13px] font-medium hover:bg-accent-hover transition-colors shadow-sm"
           >
             <Plus size={16} />
             New Chat
@@ -274,10 +280,25 @@ export default function AIChat() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {messages.length === 0 && !streaming && (
-            <div className="h-full flex flex-col items-center justify-center text-text-tertiary">
-              <Bot size={48} strokeWidth={1.2} className="mb-4 text-text-tertiary/50" />
-              <p className="text-lg font-medium text-text-secondary">Start a conversation</p>
-              <p className="text-[13px] mt-1">Choose a model and type your message below.</p>
+            <div className="h-full flex flex-col items-center justify-center text-text-tertiary px-6 animate-fade-in-up">
+              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-5">
+                <Bot size={28} strokeWidth={1.4} className="text-accent" />
+              </div>
+              <p className="text-lg font-semibold text-text-primary">How can I help?</p>
+              <p className="text-[13px] mt-1.5 text-center max-w-sm text-text-secondary">
+                Pick a model above, or try one of these prompts to get started.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-md">
+                {PROMPT_SUGGESTIONS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => setInput(prompt)}
+                    className="px-3.5 py-2 rounded-full border border-border bg-surface text-[13px] text-text-secondary hover:border-text-tertiary hover:text-text-primary hover:bg-surface-secondary transition-colors"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((msg) => (
@@ -343,7 +364,7 @@ export default function AIChat() {
 
         {/* Input */}
         <div className="px-4 pb-4 pt-2">
-          <div className="flex items-end gap-2 bg-surface-secondary border border-border rounded-2xl px-4 py-2 focus-within:border-accent transition-colors">
+          <div className="flex items-end gap-2 bg-surface border border-border rounded-2xl px-4 py-2.5 focus-within:border-text-tertiary transition-colors card-elevated">
             <textarea
               ref={textareaRef}
               value={input}

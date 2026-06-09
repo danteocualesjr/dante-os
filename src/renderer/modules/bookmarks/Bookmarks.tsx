@@ -90,26 +90,26 @@ export default function Bookmarks() {
   })
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+    <div className="h-full flex flex-col animate-fade-in-up">
+      <div className="px-6 py-4 border-b border-border flex items-center gap-3 bg-surface/60">
         <div className="flex-1 relative">
           <Search
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary"
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search bookmarks..."
-            className="w-full pl-9 pr-3 py-2 bg-surface-secondary border border-border rounded-lg text-[13px] outline-none focus:border-accent transition-colors"
+            placeholder="Search bookmarks…"
+            className="w-full pl-10 pr-3 py-2.5 bg-surface border border-border rounded-xl text-[13px] outline-none focus:border-text-tertiary transition-colors card-elevated"
           />
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 px-3 py-2 bg-accent text-white rounded-lg text-[13px] font-medium hover:bg-accent-hover transition-colors"
+          className="flex items-center gap-2 px-3.5 py-2.5 bg-accent text-surface rounded-xl text-[13px] font-medium hover:bg-accent-hover transition-colors shadow-sm shrink-0"
         >
           <Plus size={16} />
-          Add Bookmark
+          Add
         </button>
       </div>
 

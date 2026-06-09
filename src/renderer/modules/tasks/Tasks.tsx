@@ -78,14 +78,20 @@ export default function Tasks() {
   }
 
   const statuses = ['todo', 'in_progress', 'done'] as const
+  const activeCount = tasks.filter((t) => t.status !== 'done').length
+  const doneCount = tasks.filter((t) => t.status === 'done').length
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-text-primary">Tasks</h1>
+    <div className="h-full flex flex-col animate-fade-in-up">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface/60">
+        <div>
+          <p className="text-[13px] text-text-secondary">
+            {activeCount} active · {doneCount} completed
+          </p>
+        </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-accent text-white rounded-lg text-[13px] font-medium hover:bg-accent-hover transition-colors"
+          className="flex items-center gap-2 px-3.5 py-2 bg-accent text-surface rounded-xl text-[13px] font-medium hover:bg-accent-hover transition-colors shadow-sm"
         >
           <Plus size={16} />
           New Task
@@ -142,22 +148,27 @@ export default function Tasks() {
             const columnTasks = tasks.filter((t) => t.status === status)
 
             return (
-              <div key={status} className="flex flex-col">
+              <div key={status} className="flex flex-col min-h-0">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <StatusIcon size={16} className={config.color} />
                   <span className="text-[13px] font-semibold text-text-primary">
                     {config.label}
                   </span>
-                  <span className="text-[12px] text-text-tertiary bg-surface-tertiary px-1.5 py-0.5 rounded-full">
+                  <span className="text-[11px] font-medium text-text-tertiary bg-surface-tertiary px-2 py-0.5 rounded-full tabular-nums">
                     {columnTasks.length}
                   </span>
                 </div>
-                <div className="flex-1 space-y-2 overflow-y-auto">
+                <div className="flex-1 space-y-2 overflow-y-auto rounded-xl bg-surface-secondary/40 p-2 min-h-[120px]">
+                  {columnTasks.length === 0 && (
+                    <p className="text-[12px] text-text-tertiary text-center py-8 px-2">
+                      No tasks here yet
+                    </p>
+                  )}
                   {columnTasks.map((task) => (
                     <div
                       key={task.id}
                       onClick={() => setEditingTask(task)}
-                      className="group bg-surface border border-border rounded-xl p-3 cursor-pointer hover:border-accent/30 hover:shadow-sm transition-all"
+                      className="group bg-surface border border-border rounded-xl p-3 cursor-pointer hover:border-accent/30 card-elevated transition-all"
                     >
                       <div className="flex items-start justify-between">
                         <p className="text-[13px] font-medium text-text-primary leading-snug">
